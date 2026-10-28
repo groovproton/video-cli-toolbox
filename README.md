@@ -2,7 +2,7 @@
 
 A pragmatic, cross-platform **Makefile command collection for FFmpeg and local Whisper**. Inspect, compress, convert, trim, extract audio, export frames, make GIFs, and transcribe videos into timestamped SRT subtitles. No Docker, no Node.js, and no cloud account required.
 
-Designed for tutorial videos: transcribe an entire lesson, identify interesting timestamps, then extract just the clips worth reviewing.
+Useful for tutorials, recordings, and other videos: transcribe an entire lesson, identify interesting timestamps, then extract just the clips worth reviewing.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ make trim INPUT='lesson.mp4' START=00:05:20 DURATION=00:01:25
 make compress INPUT='lesson.mp4' CRF=28
 ```
 
-Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` to choose a file path for single-file targets. Existing output files are protected by default; pass `OVERWRITE=1` to replace them.
+Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` to choose a file path for single-file targets. Existing output files, including generated SRT files, are protected by default; pass `OVERWRITE=1` to replace them.
 
 > **Tip:** use shell quotes for paths containing spaces. `INPUT` is required for media commands; it defaults to `input.mp4` as a convenience.
 
@@ -87,23 +87,23 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 1. Transcribe the original lesson, retaining timestamps:
 
    ```sh
-   make subtitles INPUT='Figma lesson 07.mp4' MODEL=small LANG=English
+   make subtitles INPUT='lecture 07.mp4' MODEL=small LANG=English
    ```
 
-2. Give `output/Figma lesson 07.srt` to your AI assistant; ask it to identify the assignment and any portions that must be visually inspected.
+2. Give `output/lecture 07.srt` to your AI assistant; ask it to identify the assignment and any portions that must be visually inspected.
 3. Store needed segments in a JSON manifest:
 
    ```json
    [
-     {"name": "auto-layout", "start": "00:05:20", "duration": "00:01:25"},
-     {"name": "final-assignment", "start": "00:36:15", "duration": "00:01:45"}
+     {"name": "chapter-one", "start": "00:05:20", "duration": "00:01:25"},
+     {"name": "summary", "start": "00:36:15", "duration": "00:01:45"}
    ]
    ```
 
 4. Cut all requested video clips:
 
    ```sh
-   make clips INPUT='Figma lesson 07.mp4' CLIPS=examples/clips.json
+   make clips INPUT='lecture 07.mp4' CLIPS=examples/clips.json
    ```
 
 5. Share `output/clips/*.mp4` or screenshots for focused review. Video support and limits depend on the AI service used.
@@ -120,7 +120,7 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 - `frames` creates `output/frames/frame_000001.jpg` etc.; reduce `FPS` for long recordings to avoid thousands of images.
 - `audio` preserves the existing first audio track in Matroska Audio (`.mka`) without re-encoding; use `mp3` for broadly playable output.
 - Metadata, attachments, chapter marks and extra streams are not preserved by the simple conversion commands. This collection primarily handles the first video and optionally audio streams.
-- `OUTPUT` applies to single-output commands, not `frames`, `subtitles` or `clips`.
+- `OUTPUT` applies to single-output commands, not `frames`, `subtitles` or `clips`. Parent directories of `OUTPUT` are created automatically.
 - **Privacy:** FFmpeg processing is local. Whisper inference is local after model download; `pip` installation and first model download require internet access. Observe course copyrights and platform rules.
 
 ## Troubleshooting
@@ -131,7 +131,7 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 - Whisper too slow: use `MODEL=tiny` or `MODEL=base`; CPU processing can be much slower than the clip duration.
 - Whisper text is wrong: select correct `LANG`, use clearer audio, or choose a larger model.
 - `File exists`: pick another `OUTDIR` / `OUTPUT`, or explicitly set `OVERWRITE=1`.
-- `make clean` removes the entire configured `OUTDIR`; use a dedicated output directory, never your source-media directory.
+- `make clean` removes `OUTDIR` only when it is a safe directory inside this repository; it refuses project source, configuration directories, root/parent paths, and symlinks. Keep media files outside `OUTDIR`.
 
 ## Development
 
