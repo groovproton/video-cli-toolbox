@@ -56,7 +56,7 @@ info: ## Print video/audio stream details and metadata (ffprobe)
 	@"$(FFPROBE)" -v error -show_format -show_streams "$(INPUT)"
 
 compress: ## Re-encode H.264/AAC MP4; higher CRF means smaller, lower quality
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/compressed.mp4))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -map 0:v:0 -map 0:a? -c:v "$(VIDEO_CODEC)" -preset "$(PRESET)" -crf "$(CRF)" -c:a "$(AUDIO_CODEC)" -b:a "$(AUDIO_BITRATE)" -movflags +faststart "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/compressed.mp4)"
 
 convert: ## Convert/re-encode video format, FORMAT=mp4|mkv|mov|webm
@@ -65,19 +65,19 @@ convert: ## Convert/re-encode video format, FORMAT=mp4|mkv|mov|webm
 	@"$(PYTHON)" scripts/media.py convert --ffmpeg "$(FFMPEG)" --input "$(INPUT)" --output "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/converted.$(FORMAT))" --format "$(FORMAT)" --overwrite "$(OVERWRITE)"
 
 trim: ## Extract accurate clip by time: START=HH:MM:SS DURATION=HH:MM:SS
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.mp4))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -ss "$(START)" -i "$(INPUT)" -t "$(DURATION)" -map 0:v:0 -map 0:a? -c:v libx264 -preset veryfast -crf 20 -c:a aac "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.mp4)"
 
 audio: ## Extract original audio without re-encoding (MKV/MP4 source -> MKA)
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.mka))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -map 0:a:0 -vn -c:a copy "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.mka)"
 
 mp3: ## Export audio as MP3, 128 kbps by default
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.mp3))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -map 0:a:0 -vn -c:a libmp3lame -b:a "$(AUDIO_BITRATE)" "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.mp3)"
 
 wav: ## Export 16 kHz mono PCM WAV (speech recognition compatible)
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.wav))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -map 0:a:0 -vn -ac 1 -ar 16000 -c:a pcm_s16le "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.wav)"
 
 frames: ## Export JPG frames at FPS=1 etc. Output directory: OUTDIR/frames
@@ -85,19 +85,20 @@ frames: ## Export JPG frames at FPS=1 etc. Output directory: OUTDIR/frames
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -vf "fps=$(FPS)" -q:v 3 "$(OUTDIR)/frames/frame_%06d.jpg"
 
 thumbnail: ## Save one screenshot at START=HH:MM:SS
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/thumbnail.jpg))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -ss "$(START)" -i "$(INPUT)" -frames:v 1 -update 1 "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/thumbnail.jpg)"
 
 gif: ## Make short GIF; START, DURATION, FPS, WIDTH tune size
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.gif))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -ss "$(START)" -i "$(INPUT)" -t "$(DURATION)" -filter_complex "[0:v]fps=$(FPS),scale=$(WIDTH):-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.gif)"
 
 subtitles: $(WHISPER) ## Transcribe speech to timestamped SRT with local Whisper
 	@mkdir -p "$(OUTDIR)"
+	@if [ "$(OVERWRITE)" != "1" ] && [ -e "$(OUTDIR)/$(basename $(notdir $(INPUT))).srt" ]; then echo "SRT exists; use OVERWRITE=1" >&2; exit 2; fi
 	@"$(WHISPER)" "$(INPUT)" --model "$(MODEL)" $(if $(filter auto,$(LANG)),,--language "$(LANG)") --task "$(TASK)" --output_format srt --output_dir "$(OUTDIR)" --verbose False
 
 extract-subs: ## Extract existing first subtitle stream to SRT (no AI involved)
-	@mkdir -p "$(OUTDIR)"
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/embedded.srt))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -i "$(INPUT)" -map 0:s:0 -c:s srt "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/embedded.srt)"
 
 clips: ## Extract multiple clips listed in JSON (start + duration, see example)
@@ -106,6 +107,5 @@ clips: ## Extract multiple clips listed in JSON (start + duration, see example)
 test: ## Run unit tests for CLI helper
 	@"$(PYTHON)" -m unittest discover -s tests -v
 
-clean: ## Delete generated output only (never source media)
-	@case "$(OUTDIR)" in ""|"."|".."|"/"|"./"|"../"|"/*"|"~"|"$$HOME"|"$(HOME)") echo "Unsafe OUTDIR for clean" >&2; exit 2;; esac
-	@rm -rf -- "$(OUTDIR)"
+clean: ## Remove generated output, restricted to a directory inside project root
+	@"$(PYTHON)" scripts/media.py clean --outdir "$(OUTDIR)"
