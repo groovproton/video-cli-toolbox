@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -40,6 +41,25 @@ def validate_clips(data):
     return data
 
 
+def safe_clean(outdir):
+    """Delete only a non-symlink directory strictly below the repository root."""
+    root = Path(__file__).resolve().parent.parent
+    path = Path(outdir).absolute()
+    if path.is_symlink():
+        raise ValueError("Refusing to clean symlink")
+    resolved = path.resolve()
+    if root not in resolved.parents:
+        raise ValueError("OUTDIR must be inside the project and not its root")
+    protected = {"scripts", "tests", "examples", ".git", ".github", ".venv"}
+    rel = resolved.relative_to(root)
+    if rel.parts[0] in protected:
+        raise ValueError("Refusing to clean project source or configuration")
+    if resolved.exists():
+        if not resolved.is_dir():
+            raise ValueError("OUTDIR must be a directory")
+        shutil.rmtree(resolved)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sp = ap.add_subparsers(dest="command", required=True)
@@ -53,7 +73,12 @@ def main():
     clips = sp.add_parser("clips", parents=[common])
     clips.add_argument("--manifest", required=True)
     clips.add_argument("--outdir", required=True)
+    clean = sp.add_parser("clean")
+    clean.add_argument("--outdir", required=True)
     a = ap.parse_args()
+    if a.command == "clean":
+        safe_clean(a.outdir)
+        return
     if a.command == "convert":
         if a.format == "webm":
             codecs = ["-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-c:a", "libopus"]
