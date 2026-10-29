@@ -34,6 +34,10 @@ OVERWRITE ?= 0
 YTDLP ?= yt-dlp
 URL ?=
 YT_FORMAT ?= bv*+ba/b
+YT_BROWSER ?=
+YT_CONTAINER ?= mp4/mkv
+# Optional browser cookies; never persist them to this repository.
+YT_COOKIE_ARGS = $(if $(YT_BROWSER),--cookies-from-browser "$(YT_BROWSER)",)
 YT_LANG ?= en
 YT_AUDIO_FORMAT ?= mp3
 YT_SECTION_START ?= 00:00:00
@@ -45,7 +49,7 @@ FFLAG := $(if $(filter 1,$(OVERWRITE)),-y,-n)
 .PHONY: help doctor install-whisper info compress convert trim audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
 
 help: ## List all commands and configurable variables
-	@awk 'BEGIN {FS = ":.*## "; printf "Video CLI Toolbox\n\nUsage: make <target> INPUT=... [OPTIONS]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "; printf "Video CLI Toolbox\n\nUsage: make <target> INPUT=... or URL=... [OPTIONS]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf '\nExamples:\n  make info INPUT="lecture.mp4"\n  make compress INPUT="lecture.mp4" CRF=28\n  make subtitles INPUT="lecture.mp4" LANG=English MODEL=small\n  make trim INPUT="lecture.mp4" START=00:05:00 DURATION=00:01:30\n  make clips INPUT="lecture.mp4" CLIPS=examples/clips.json\n\nOutput: OUTDIR=output (or OUTPUT=path). OVERWRITE=1 replaces existing files.\n'
 
 doctor: ## Verify installed binaries and their versions
@@ -131,42 +135,42 @@ yt-doctor: ## Show installed yt-dlp version (optional dependency)
 
 yt-info: ## Print source title, ID, duration and webpage URL without downloading
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@"$(YTDLP)" --no-playlist --print "%(title)s | %(id)s | %(duration_string)s | %(webpage_url)s" -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --print "%(title)s | %(id)s | %(duration_string)s | %(webpage_url)s" -- "$(URL)"
 
 yt-formats: ## List video/audio formats available at URL
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@"$(YTDLP)" --no-playlist --list-formats -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --list-formats -- "$(URL)"
 
 yt-subs-list: ## List manual and automatic subtitle languages/formats
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@"$(YTDLP)" --no-playlist --list-subs -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --list-subs -- "$(URL)"
 
 yt-video: ## Download one video; select streams with YT_FORMAT
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist --no-overwrites --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-audio: ## Download best audio and convert to YT_AUDIO_FORMAT=mp3
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-subs: ## Download manual subtitles only, convert to SRT; YT_LANG=en
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-auto-subs: ## Download auto-generated subtitles only, convert to SRT
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist --skip-download --no-overwrites --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-playlist: ## Explicitly download a playlist; potentially many files!
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --yes-playlist --no-overwrites --download-archive "$(OUTDIR)/yt-dlp/archive.txt" --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(playlist_title).100B/%(playlist_index)s - %(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --yes-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-archive "$(OUTDIR)/yt-dlp/archive.txt" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(playlist_title).100B/%(playlist_index)s - %(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-section: ## Download a time section; YT_SECTION_START and YT_SECTION_END
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist --no-overwrites --download-sections "*$(YT_SECTION_START)-$(YT_SECTION_END)" --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s] section.%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-sections "*$(YT_SECTION_START)-$(YT_SECTION_END)" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s] section.%(ext)s' -- "$(URL)"
