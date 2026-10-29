@@ -33,10 +33,11 @@ OVERWRITE ?= 0
 # unless you select yt-playlist. Keep URLs quoted to protect ? and & characters.
 YTDLP ?= yt-dlp
 URL ?=
-YT_FORMAT ?= bv*+ba/b
-YT_BROWSER ?=
-YT_CONTAINER ?= mp4/mkv
-# Optional browser cookies; never persist them to this repository.
+YT_FORMAT ?= bv[ext=mp4]+ba[ext=m4a]/bv+ba/b
+YT_BROWSER ?= vivaldi
+YT_CONTAINER ?= mp4
+# Vivaldi cookies by default; override YT_BROWSER= to disable.
+# Never persist browser cookies to this repository.
 YT_COOKIE_ARGS = $(if $(YT_BROWSER),--cookies-from-browser "$(YT_BROWSER)",)
 YT_LANG ?= en
 YT_AUDIO_FORMAT ?= mp3
