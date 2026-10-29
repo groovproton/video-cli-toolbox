@@ -49,7 +49,7 @@ YT_SECTION_END ?= 00:01:00
 # Never overwrite by default. Set OVERWRITE=1 to replace output files.
 FFLAG := $(if $(filter 1,$(OVERWRITE)),-y,-n)
 
-.PHONY: help doctor install-whisper info compress convert trim audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
+.PHONY: help doctor install-whisper info compress convert trim audio-cut audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
 
 help: ## List all commands and configurable variables
 	@awk 'BEGIN {FS = ":.*## "; printf "Video CLI Toolbox\n\nUsage: make <target> INPUT=... or URL=... [OPTIONS]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -84,6 +84,10 @@ convert: ## Convert/re-encode video format, FORMAT=mp4|mkv|mov|webm
 trim: ## Extract accurate clip by time: START=HH:MM:SS DURATION=HH:MM:SS
 	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.mp4))"
 	@"$(FFMPEG)" -hide_banner $(FFLAG) -ss "$(START)" -i "$(INPUT)" -t "$(DURATION)" -map 0:v:0 -map 0:a? -c:v libx264 -preset veryfast -crf 20 -c:a aac "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/clip.mp4)"
+
+audio-cut: ## Cut an audio fragment without re-encoding; set OUTPUT=fragment.webm
+	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/fragment.webm))"
+	@"$(FFMPEG)" -hide_banner $(FFLAG) -ss "$(START)" -i "$(INPUT)" -t "$(DURATION)" -map 0:a:0 -vn -c:a copy "$(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/fragment.webm)"
 
 audio: ## Extract original audio without re-encoding (MKV/MP4 source -> MKA)
 	@mkdir -p "$(dir $(if $(OUTPUT),$(OUTPUT),$(OUTDIR)/audio.mka))"
