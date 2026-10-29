@@ -113,23 +113,31 @@ All yt-dlp downloads go directly into the **current working directory**, not int
 | `yt-formats` | List available video/audio streams | `make yt-formats URL='https://example.com/watch?v=123'` |
 | `yt-subs-list` | List available subtitle languages | `make yt-subs-list URL='https://example.com/watch?v=123'` |
 | `yt-video` | Download one video and audio | `make yt-video URL='https://example.com/watch?v=123'` |
-| `yt-audio` | Download audio and convert, default MP3 | `make yt-audio URL='https://example.com/watch?v=123'` |
+| `yt-audio` | Download original audio stream without re-encoding | `make yt-audio URL='https://example.com/watch?v=123'` |
 | `yt-subs` | Download manual subtitles as SRT | `make yt-subs URL='https://example.com/watch?v=123' YT_LANG=en` |
 | `yt-auto-subs` | Download generated subtitles as SRT | `make yt-auto-subs URL='https://example.com/watch?v=123' YT_LANG=ru` |
 | `yt-section` | Download part of a video | `make yt-section URL='https://example.com/watch?v=123' YT_SECTION_START=00:01:00 YT_SECTION_END=00:02:00` |
 | `yt-playlist` | Explicitly download a playlist | `make yt-playlist URL='https://example.com/playlist?list=123'` |
 
-**Defaults:** `YT_BROWSER=vivaldi`, `YT_CONTAINER=mp4`, `YT_FORMAT='bv[ext=mp4]+ba[ext=m4a]/bv+ba/b'`, `YT_AUDIO_FORMAT=mp3`, `YT_LANG=en`. Override with command-line variables (for example `YT_BROWSER=` disables reading browser cookies). `YTDLP` chooses the binary; `YT_FORMAT` selects video/audio streams (default `bv*+ba/b`); `YT_LANG` specifies subtitle language tags such as `en`, `ru`, or `en.*`; `YT_AUDIO_FORMAT` defaults to `mp3`.
+**Defaults:** `YT_BROWSER=vivaldi`, `YT_CONTAINER=mp4`, `YT_FORMAT='bv[ext=mp4]+ba[ext=m4a]/bv+ba/b'`, `YT_LANG=en`. Override with command-line variables (for example `YT_BROWSER=` disables reading browser cookies). `YTDLP` chooses the binary; `YT_FORMAT` selects video/audio streams (default `bv*+ba/b`); `YT_LANG` specifies subtitle language tags such as `en`, `ru`, or `en.*`.
 
 `yt-subs` and `yt-auto-subs` retrieve subtitles already available from the source; unlike Whisper, they do **not** recognize speech themselves. If subtitles aren't available, download the video then use `make subtitles INPUT='path/to/video.mp4'`.
 
 The MP4 preference is not a guarantee if the source lacks compatible streams; inspect `yt-formats` when needed. Cookies are sensitive: never commit browser profiles or exported cookies. The `yt-section` start/end are **absolute timestamps**, not start/duration, and section boundaries may depend on keyframes. The playlist command uses a download archive to avoid duplicate downloads. Large playlists can consume substantial disk space. URLs containing `&` or `?` must be quoted in your shell.
 
+The `yt-audio` target downloads the best available **audio-only** stream in its original codec/container (often `.webm` or `.m4a`); it never downloads a combined video stream as a fallback. After a successful download it prints a conversion example:
+
+```sh
+make mp3 INPUT="audio.webm"
+```
+
+Replace `audio.webm` with the actual downloaded filename. Run the conversion command from the project root, or specify paths explicitly. MP3 conversion is optional and re-encodes the audio.
+
 ## Simple command-line wrappers
 
 Four executable POSIX shell scripts in `bin/` accept **one positional URL** and
 call the Makefile from any working directory. Downloads are saved into the directory from which you invoked the wrapper, even though the wrapper calls `make -C`. All standard yt-dlp defaults
-(Vivaldi cookies, MP4 preference, MP3 and English subtitles) are inherited.
+(Vivaldi cookies, MP4 preference and English subtitles) are inherited.
 
 ```sh
 ./bin/yt-video 'https://www.youtube.com/watch?v=VIDEO_ID'
