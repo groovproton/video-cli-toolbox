@@ -77,6 +77,14 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 
 > **Tip:** use shell quotes for paths containing spaces. `INPUT` is required for media commands; it defaults to `input.mp4` as a convenience.
 
+### Cut an audio fragment without re-encoding
+
+```sh
+make audio-cut INPUT="audio.webm" START=00:01:15 DURATION=00:00:30 OUTPUT="fragment.webm"
+```
+
+`START` is the starting timestamp; `DURATION` is the length of the clip. `audio-cut` copies the original audio codec without converting it, so keep a compatible output extension (e.g. WebM to WebM). Set `OUTPUT` to save in your current folder; otherwise the default is `output/fragment.webm`. The copy operation is fast, but cut boundaries may not be perfectly sample-accurate.
+
 ## All commands
 
 | Target | Purpose | Example / options |
