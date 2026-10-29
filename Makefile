@@ -43,7 +43,6 @@ YT_CONTAINER ?= mp4
 # Never persist browser cookies to this repository.
 YT_COOKIE_ARGS = $(if $(YT_BROWSER),--cookies-from-browser "$(YT_BROWSER)",)
 YT_LANG ?= en
-YT_AUDIO_FORMAT ?= mp3
 YT_SECTION_START ?= 00:00:00
 YT_SECTION_END ?= 00:01:00
 
@@ -154,10 +153,11 @@ yt-video: ## Download one video; select streams with YT_FORMAT
 	@mkdir -p "$(YT_OUTDIR)"
 	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
-yt-audio: ## Download best audio and convert to YT_AUDIO_FORMAT=mp3
+yt-audio: ## Download original best audio stream without re-encoding
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(YT_OUTDIR)"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites -f ba -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@printf '\nAudio downloaded without conversion.\nTo convert to MP3 from the project root:\n  make mp3 INPUT="audio.webm"\nReplace audio.webm with your downloaded filename (webm, m4a, etc.).\n\n'
 
 yt-subs: ## Download manual subtitles only, convert to SRT; YT_LANG=en
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
