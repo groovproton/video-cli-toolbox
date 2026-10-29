@@ -1,4 +1,4 @@
-# Video CLI Toolbox — GNU Make frontend for FFmpeg, ffprobe, and Whisper.
+# Video CLI Toolbox — GNU Make frontend for FFmpeg, ffprobe, Whisper, and yt-dlp.
 # Override any setting on the command line: make compress INPUT='movie.mp4' CRF=27
 .DEFAULT_GOAL := help
 SHELL := /bin/sh
@@ -29,10 +29,20 @@ TASK ?= transcribe
 CLIPS ?= examples/clips.json
 OVERWRITE ?= 0
 
+# Online sources. Pass URL='https://...' explicitly; yt-dlp never downloads a playlist
+# unless you select yt-playlist. Keep URLs quoted to protect ? and & characters.
+YTDLP ?= yt-dlp
+URL ?=
+YT_FORMAT ?= bv*+ba/b
+YT_LANG ?= en
+YT_AUDIO_FORMAT ?= mp3
+YT_SECTION_START ?= 00:00:00
+YT_SECTION_END ?= 00:01:00
+
 # Never overwrite by default. Set OVERWRITE=1 to replace output files.
 FFLAG := $(if $(filter 1,$(OVERWRITE)),-y,-n)
 
-.PHONY: help doctor install-whisper info compress convert trim audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean
+.PHONY: help doctor install-whisper info compress convert trim audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
 
 help: ## List all commands and configurable variables
 	@awk 'BEGIN {FS = ":.*## "; printf "Video CLI Toolbox\n\nUsage: make <target> INPUT=... [OPTIONS]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -109,3 +119,54 @@ test: ## Run unit tests for CLI helper
 
 clean: ## Remove generated output, restricted to a directory inside project root
 	@"$(PYTHON)" scripts/media.py clean --outdir "$(OUTDIR)"
+
+# yt-dlp commands are optional. URL is required to avoid surprising network calls.
+# All downloads are stored in OUTDIR/yt-dlp; filenames include source IDs to avoid
+# collisions. yt-dlp may require FFmpeg to merge streams or convert subtitles/audio.
+# Only download content you have permission to access.
+
+yt-doctor: ## Show installed yt-dlp version (optional dependency)
+	@command -v "$(YTDLP)" >/dev/null || { echo 'Missing yt-dlp; see README installation section' >&2; exit 1; }
+	@"$(YTDLP)" --version
+
+yt-info: ## Print source title, ID, duration and webpage URL without downloading
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@"$(YTDLP)" --no-playlist --print "%(title)s | %(id)s | %(duration_string)s | %(webpage_url)s" -- "$(URL)"
+
+yt-formats: ## List video/audio formats available at URL
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@"$(YTDLP)" --no-playlist --list-formats -- "$(URL)"
+
+yt-subs-list: ## List manual and automatic subtitle languages/formats
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@"$(YTDLP)" --no-playlist --list-subs -- "$(URL)"
+
+yt-video: ## Download one video; select streams with YT_FORMAT
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --no-playlist --no-overwrites --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+
+yt-audio: ## Download best audio and convert to YT_AUDIO_FORMAT=mp3
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --no-playlist --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+
+yt-subs: ## Download manual subtitles only, convert to SRT; YT_LANG=en
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --no-playlist --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+
+yt-auto-subs: ## Download auto-generated subtitles only, convert to SRT
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --no-playlist --skip-download --no-overwrites --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+
+yt-playlist: ## Explicitly download a playlist; potentially many files!
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --yes-playlist --no-overwrites --download-archive "$(OUTDIR)/yt-dlp/archive.txt" --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(playlist_title).100B/%(playlist_index)s - %(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+
+yt-section: ## Download a time section; YT_SECTION_START and YT_SECTION_END
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@mkdir -p "$(OUTDIR)/yt-dlp"
+	@"$(YTDLP)" --no-playlist --no-overwrites --download-sections "*$(YT_SECTION_START)-$(YT_SECTION_END)" --format "$(YT_FORMAT)" --merge-output-format mp4/mkv -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s] section.%(ext)s' -- "$(URL)"
