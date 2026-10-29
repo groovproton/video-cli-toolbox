@@ -125,6 +125,25 @@ All downloads go to `output/yt-dlp/` (or `OUTDIR/yt-dlp/`). Single-video targets
 
 The MP4 preference is not a guarantee if the source lacks compatible streams; inspect `yt-formats` when needed. Cookies are sensitive: never commit browser profiles or exported cookies. The `yt-section` start/end are **absolute timestamps**, not start/duration, and section boundaries may depend on keyframes. The playlist command uses a download archive to avoid duplicate downloads. Large playlists can consume substantial disk space. URLs containing `&` or `?` must be quoted in your shell.
 
+## Simple command-line wrappers
+
+Four executable POSIX shell scripts in `bin/` accept **one positional URL** and
+call the Makefile from any working directory. All standard yt-dlp defaults
+(Vivaldi cookies, MP4 preference, MP3 and English subtitles) are inherited.
+
+```sh
+./bin/yt-video 'https://www.youtube.com/watch?v=VIDEO_ID'
+./bin/yt-audio 'https://www.youtube.com/watch?v=VIDEO_ID'
+./bin/yt-subs-en 'https://www.youtube.com/watch?v=VIDEO_ID'
+./bin/yt-subs-ru 'https://www.youtube.com/watch?v=VIDEO_ID'
+```
+
+Use `./bin/yt-video` while in the project root, or add the absolute
+`bin/` directory to your shell `PATH` for global commands.
+Each script requires exactly one HTTP(S) URL; otherwise it prints usage and
+exits with a nonzero status. Quote URLs containing `&` and `?`.
+For options beyond these defaults, use the existing `make yt-*` targets.
+
 ## Recommended tutorial workflow
 
 1. Transcribe the original lesson, retaining timestamps:

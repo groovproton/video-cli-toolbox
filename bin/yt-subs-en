@@ -1,0 +1,17 @@
+#!/bin/sh
+# Video CLI Toolbox: yt-subs-en URL
+set -eu
+
+if [ "$#" -ne 1 ] || [ -z "$1" ]; then
+    printf 'Usage: %s URL\n' "${0##*/}" >&2
+    exit 2
+fi
+
+case "$1" in
+    http://*|https://*) ;;
+    *) printf 'Expected an http(s) URL\n' >&2; exit 2 ;;
+esac
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PROJECT_DIR=$(dirname -- "$SCRIPT_DIR")
+exec make -C "$PROJECT_DIR" yt-auto-subs URL="$1" YT_LANG=en
