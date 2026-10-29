@@ -161,10 +161,10 @@ yt-subs: ## Download manual subtitles only, convert to SRT; YT_LANG=en
 	@mkdir -p "$(OUTDIR)/yt-dlp"
 	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
-yt-auto-subs: ## Download auto-generated subtitles only, convert to SRT
+yt-auto-subs: ## Download available manual or auto subtitles, convert to SRT
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-playlist: ## Explicitly download a playlist; potentially many files!
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
