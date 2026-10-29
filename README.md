@@ -119,11 +119,11 @@ All downloads go to `output/yt-dlp/` (or `OUTDIR/yt-dlp/`). Single-video targets
 | `yt-section` | Download part of a video | `make yt-section URL='https://example.com/watch?v=123' YT_SECTION_START=00:01:00 YT_SECTION_END=00:02:00` |
 | `yt-playlist` | Explicitly download a playlist | `make yt-playlist URL='https://example.com/playlist?list=123'` |
 
-**Options:** `YTDLP` chooses the binary; `YT_FORMAT` selects video/audio streams (default `bv*+ba/b`); `YT_LANG` specifies subtitle language tags such as `en`, `ru`, or `en.*`; `YT_AUDIO_FORMAT` defaults to `mp3`.
+**Defaults:** `YT_BROWSER=vivaldi`, `YT_CONTAINER=mp4`, `YT_FORMAT='bv[ext=mp4]+ba[ext=m4a]/bv+ba/b'`, `YT_AUDIO_FORMAT=mp3`, `YT_LANG=en`. Override with command-line variables (for example `YT_BROWSER=` disables reading browser cookies). `YTDLP` chooses the binary; `YT_FORMAT` selects video/audio streams (default `bv*+ba/b`); `YT_LANG` specifies subtitle language tags such as `en`, `ru`, or `en.*`; `YT_AUDIO_FORMAT` defaults to `mp3`.
 
 `yt-subs` and `yt-auto-subs` retrieve subtitles already available from the source; unlike Whisper, they do **not** recognize speech themselves. If subtitles aren't available, download the video then use `make subtitles INPUT='path/to/video.mp4'`.
 
-The `yt-section` start/end are **absolute timestamps**, not start/duration, and section boundaries may depend on keyframes. The playlist command uses a download archive to avoid duplicate downloads. Large playlists can consume substantial disk space. URLs containing `&` or `?` must be quoted in your shell.
+The MP4 preference is not a guarantee if the source lacks compatible streams; inspect `yt-formats` when needed. Cookies are sensitive: never commit browser profiles or exported cookies. The `yt-section` start/end are **absolute timestamps**, not start/duration, and section boundaries may depend on keyframes. The playlist command uses a download archive to avoid duplicate downloads. Large playlists can consume substantial disk space. URLs containing `&` or `?` must be quoted in your shell.
 
 ## Recommended tutorial workflow
 
