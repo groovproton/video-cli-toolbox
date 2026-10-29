@@ -104,7 +104,7 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 
 These commands work on supported sites, subject to site changes, permissions and availability. **They do not circumvent DRM.** Download only content you are authorized to obtain, and respect the source website's terms and copyright.
 
-All downloads go to `output/yt-dlp/` (or `OUTDIR/yt-dlp/`). Single-video targets use `--no-playlist` deliberately. Filenames contain the media ID to reduce collisions; existing files are protected.
+All yt-dlp downloads go directly into the **current working directory**, not into `output/`. You can override the destination with `YT_OUTDIR=/some/path` when invoking Make directly. Single-video targets use `--no-playlist` deliberately. Filenames contain the media ID to reduce collisions; existing files are protected.
 
 | Target | Purpose | Example |
 | --- | --- | --- |
@@ -128,7 +128,7 @@ The MP4 preference is not a guarantee if the source lacks compatible streams; in
 ## Simple command-line wrappers
 
 Four executable POSIX shell scripts in `bin/` accept **one positional URL** and
-call the Makefile from any working directory. All standard yt-dlp defaults
+call the Makefile from any working directory. Downloads are saved into the directory from which you invoked the wrapper, even though the wrapper calls `make -C`. All standard yt-dlp defaults
 (Vivaldi cookies, MP4 preference, MP3 and English subtitles) are inherited.
 
 ```sh
@@ -142,7 +142,7 @@ Use `./bin/yt-video` while in the project root, or add the absolute
 `bin/` directory to your shell `PATH` for global commands.
 Each script requires exactly one HTTP(S) URL; otherwise it prints usage and
 exits with a nonzero status. Quote URLs containing `&` and `?`.
-For options beyond these defaults, use the existing `make yt-*` targets.
+For options beyond these defaults, use the existing `make yt-*` targets. Playlist downloads also keep their download archive as a hidden `.yt-dlp-archive.txt` in the destination directory.
 
 ## Recommended tutorial workflow
 
