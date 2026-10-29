@@ -1,6 +1,6 @@
 # Video CLI Toolbox
 
-A pragmatic, cross-platform **Makefile command collection for FFmpeg and local Whisper**. Inspect, compress, convert, trim, extract audio, export frames, make GIFs, and transcribe videos into timestamped SRT subtitles. No Docker, no Node.js, and no cloud account required.
+A pragmatic, cross-platform **Makefile command collection for FFmpeg, local Whisper, and optional yt-dlp**. Inspect, compress, convert, trim, extract audio, export frames, make GIFs, and transcribe videos into timestamped SRT subtitles. No Docker, no Node.js, and no cloud account required.
 
 Useful for tutorials, recordings, and other videos: transcribe an entire lesson, identify interesting timestamps, then extract just the clips worth reviewing.
 
@@ -45,6 +45,24 @@ make install-whisper
 
 This creates `.venv/`, installs the open-source `openai-whisper` Python package, and keeps it separate from your system Python. On first transcription, model weights are downloaded. Transcription subsequently runs locally.
 
+### Install yt-dlp (optional)
+
+**macOS (Homebrew)**
+
+```sh
+brew install yt-dlp
+```
+
+**Linux / Windows WSL** (isolated Python installation):
+
+```sh
+python3 -m venv .venv-ytdlp
+.venv-ytdlp/bin/python -m pip install -U yt-dlp
+make yt-doctor YTDLP=.venv-ytdlp/bin/yt-dlp
+```
+
+Or install from the official [yt-dlp installation guide](https://github.com/yt-dlp/yt-dlp/wiki/Installation). FFmpeg is used for merging separate streams, audio extraction and SRT conversion. Check versions with `make yt-doctor`. yt-dlp may need updating when sites change.
+
 ## Quick start
 
 ```sh
@@ -81,6 +99,31 @@ Generated files go into `output/` unless you set `OUTDIR=...`; use `OUTPUT=...` 
 | `clips` | Extract batch clips from JSON | `make clips INPUT=movie.mp4 CLIPS=examples/clips.json` |
 | `test` | Run Python stdlib tests | `make test` |
 | `clean` | Remove `OUTDIR` output | `make clean` |
+
+## Download media with yt-dlp (optional)
+
+These commands work on supported sites, subject to site changes, permissions and availability. **They do not circumvent DRM.** Download only content you are authorized to obtain, and respect the source website's terms and copyright.
+
+All downloads go to `output/yt-dlp/` (or `OUTDIR/yt-dlp/`). Single-video targets use `--no-playlist` deliberately. Filenames contain the media ID to reduce collisions; existing files are protected.
+
+| Target | Purpose | Example |
+| --- | --- | --- |
+| `yt-doctor` | Check yt-dlp version | `make yt-doctor` |
+| `yt-info` | Print source information | `make yt-info URL='https://example.com/watch?v=123'` |
+| `yt-formats` | List available video/audio streams | `make yt-formats URL='https://example.com/watch?v=123'` |
+| `yt-subs-list` | List available subtitle languages | `make yt-subs-list URL='https://example.com/watch?v=123'` |
+| `yt-video` | Download one video and audio | `make yt-video URL='https://example.com/watch?v=123'` |
+| `yt-audio` | Download audio and convert, default MP3 | `make yt-audio URL='https://example.com/watch?v=123'` |
+| `yt-subs` | Download manual subtitles as SRT | `make yt-subs URL='https://example.com/watch?v=123' YT_LANG=en` |
+| `yt-auto-subs` | Download generated subtitles as SRT | `make yt-auto-subs URL='https://example.com/watch?v=123' YT_LANG=ru` |
+| `yt-section` | Download part of a video | `make yt-section URL='https://example.com/watch?v=123' YT_SECTION_START=00:01:00 YT_SECTION_END=00:02:00` |
+| `yt-playlist` | Explicitly download a playlist | `make yt-playlist URL='https://example.com/playlist?list=123'` |
+
+**Options:** `YTDLP` chooses the binary; `YT_FORMAT` selects video/audio streams (default `bv*+ba/b`); `YT_LANG` specifies subtitle language tags such as `en`, `ru`, or `en.*`; `YT_AUDIO_FORMAT` defaults to `mp3`.
+
+`yt-subs` and `yt-auto-subs` retrieve subtitles already available from the source; unlike Whisper, they do **not** recognize speech themselves. If subtitles aren't available, download the video then use `make subtitles INPUT='path/to/video.mp4'`.
+
+The `yt-section` start/end are **absolute timestamps**, not start/duration, and section boundaries may depend on keyframes. The playlist command uses a download archive to avoid duplicate downloads. Large playlists can consume substantial disk space. URLs containing `&` or `?` must be quoted in your shell.
 
 ## Recommended tutorial workflow
 
