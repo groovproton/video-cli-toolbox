@@ -117,6 +117,7 @@ All yt-dlp downloads go directly into the **current working directory**, not int
 | Target | Purpose | Example |
 | --- | --- | --- |
 | `yt-doctor` | Check yt-dlp version | `make yt-doctor` |
+| `yt-description` | Print title, channel and full description without downloading | `make yt-description URL='https://example.com/watch?v=123'` |
 | `yt-info` | Print source information | `make yt-info URL='https://example.com/watch?v=123'` |
 | `yt-formats` | List available video/audio streams | `make yt-formats URL='https://example.com/watch?v=123'` |
 | `yt-subs-list` | List available subtitle languages | `make yt-subs-list URL='https://example.com/watch?v=123'` |
@@ -143,13 +144,14 @@ Replace `audio.webm` with the actual downloaded filename. Run the conversion com
 
 ## Simple command-line wrappers
 
-Four executable POSIX shell scripts in `bin/` accept **one positional URL** and
+Five executable POSIX shell scripts in `bin/` accept **one positional URL** and
 call the Makefile from any working directory. Downloads are saved into the directory from which you invoked the wrapper, even though the wrapper calls `make -C`. All standard yt-dlp defaults
 (Vivaldi cookies, MP4 preference and English subtitles) are inherited.
 
 ```sh
 ./bin/yt-video 'https://www.youtube.com/watch?v=VIDEO_ID'
 ./bin/yt-audio 'https://www.youtube.com/watch?v=VIDEO_ID'
+./bin/yt-description 'https://www.youtube.com/watch?v=VIDEO_ID'
 ./bin/yt-subs-en 'https://www.youtube.com/watch?v=VIDEO_ID'
 ./bin/yt-subs-ru 'https://www.youtube.com/watch?v=VIDEO_ID'
 ```

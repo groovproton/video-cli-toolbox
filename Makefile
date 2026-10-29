@@ -49,7 +49,7 @@ YT_SECTION_END ?= 00:01:00
 # Never overwrite by default. Set OVERWRITE=1 to replace output files.
 FFLAG := $(if $(filter 1,$(OVERWRITE)),-y,-n)
 
-.PHONY: help doctor install-whisper info compress convert trim audio-cut audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
+.PHONY: help doctor install-whisper info compress convert trim audio-cut audio mp3 wav frames thumbnail gif subtitles extract-subs clips test clean yt-doctor yt-info yt-description yt-formats yt-video yt-audio yt-subs yt-auto-subs yt-subs-list yt-playlist yt-section
 
 help: ## List all commands and configurable variables
 	@awk 'BEGIN {FS = ":.*## "; printf "Video CLI Toolbox\n\nUsage: make <target> INPUT=... or URL=... [OPTIONS]\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -143,6 +143,10 @@ yt-doctor: ## Show installed yt-dlp version (optional dependency)
 yt-info: ## Print source title, ID, duration and webpage URL without downloading
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
 	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --print "%(title)s | %(id)s | %(duration_string)s | %(webpage_url)s" -- "$(URL)"
+
+yt-description: ## Print video title, channel and full description (no download)
+	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --print "Title: %(title)s\nChannel: %(channel)s\n\n%(description)s" -- "$(URL)"
 
 yt-formats: ## List video/audio formats available at URL
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
