@@ -35,6 +35,9 @@ YTDLP ?= yt-dlp
 URL ?=
 YT_FORMAT ?= bv[ext=mp4]+ba[ext=m4a]/bv+ba/b
 YT_BROWSER ?= vivaldi
+# Downloads go to the caller's working directory. Wrappers pass this explicitly
+# because `make -C` changes CURDIR to the repository root.
+YT_OUTDIR ?= $(CURDIR)
 YT_CONTAINER ?= mp4
 # Vivaldi cookies by default; override YT_BROWSER= to disable.
 # Never persist browser cookies to this repository.
@@ -126,7 +129,7 @@ clean: ## Remove generated output, restricted to a directory inside project root
 	@"$(PYTHON)" scripts/media.py clean --outdir "$(OUTDIR)"
 
 # yt-dlp commands are optional. URL is required to avoid surprising network calls.
-# All downloads are stored in OUTDIR/yt-dlp; filenames include source IDs to avoid
+# Downloads go to YT_OUTDIR (current working directory by default); IDs avoid
 # collisions. yt-dlp may require FFmpeg to merge streams or convert subtitles/audio.
 # Only download content you have permission to access.
 
@@ -148,30 +151,30 @@ yt-subs-list: ## List manual and automatic subtitle languages/formats
 
 yt-video: ## Download one video; select streams with YT_FORMAT
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-audio: ## Download best audio and convert to YT_AUDIO_FORMAT=mp3
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites -f ba/b -x --audio-format "$(YT_AUDIO_FORMAT)" -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-subs: ## Download manual subtitles only, convert to SRT; YT_LANG=en
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-auto-subs: ## Download available manual or auto subtitles, convert to SRT
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --skip-download --no-overwrites --write-subs --write-auto-subs --sub-langs "$(YT_LANG)" --convert-subs srt -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-playlist: ## Explicitly download a playlist; potentially many files!
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --yes-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-archive "$(OUTDIR)/yt-dlp/archive.txt" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(playlist_title).100B/%(playlist_index)s - %(title).160B [%(id)s].%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --yes-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-archive "$(YT_OUTDIR)/.yt-dlp-archive.txt" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(YT_OUTDIR)" -o '%(playlist_title).100B/%(playlist_index)s - %(title).160B [%(id)s].%(ext)s' -- "$(URL)"
 
 yt-section: ## Download a time section; YT_SECTION_START and YT_SECTION_END
 	@test -n "$(URL)" || { echo 'URL is required' >&2; exit 2; }
-	@mkdir -p "$(OUTDIR)/yt-dlp"
-	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-sections "*$(YT_SECTION_START)-$(YT_SECTION_END)" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(OUTDIR)/yt-dlp" -o '%(title).160B [%(id)s] section.%(ext)s' -- "$(URL)"
+	@mkdir -p "$(YT_OUTDIR)"
+	@"$(YTDLP)" --no-playlist $(YT_COOKIE_ARGS) --no-overwrites --download-sections "*$(YT_SECTION_START)-$(YT_SECTION_END)" --format "$(YT_FORMAT)" --merge-output-format "$(YT_CONTAINER)" -P "$(YT_OUTDIR)" -o '%(title).160B [%(id)s] section.%(ext)s' -- "$(URL)"
