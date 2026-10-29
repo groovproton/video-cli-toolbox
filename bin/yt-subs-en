@@ -14,4 +14,4 @@ esac
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_DIR=$(dirname -- "$SCRIPT_DIR")
-exec make -C "$PROJECT_DIR" yt-auto-subs URL="$1" YT_LANG='en.*'
+exec make -C "$PROJECT_DIR" YT_OUTDIR="$PWD" yt-auto-subs URL="$1" YT_LANG='en.*'
